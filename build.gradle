@@ -1,0 +1,78 @@
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+
+buildscript {
+	repositories {
+		maven {
+			url "https://plugins.gradle.org/m2/"
+		}
+		jcenter()
+	}
+    dependencies {
+		classpath "gradle.plugin.net.minecrell:licenser:0.2.1"
+    }
+}
+
+sourceCompatibility = 1.8
+
+def ENV = System.getenv()
+if (ENV.BUILD_NUMBER) {
+    version = version + "." + "${System.getenv().BUILD_NUMBER}"
+}
+
+group = 'net.fabricmc'
+archivesBaseName = project.name.toLowerCase()
+
+repositories {
+	mavenCentral()
+	maven {
+		name = 'Fabric'
+		url = 'https://maven.fabricmc.net'
+	}
+}
+
+dependencies {
+	compile 'org.ow2.asm:asm:7.1'
+	compile 'org.ow2.asm:asm-commons:7.1'
+	compile 'org.ow2.asm:asm-tree:7.1'
+	compile 'org.ow2.asm:asm-util:7.1'
+	compile ('org.cadixdev:mercury:0.1.0.fabric-SNAPSHOT')
+	compile 'net.fabricmc:tiny-mappings-parser:0.1.1.8'
+}
+
+// Due to a gradle bug, the full class name needs to be used
+apply plugin: net.minecrell.gradle.licenser.Licenser
+
+license {
+    header file('HEADER')
+    include '**/*.java'
+}
+
+jar {
+	manifest {
+		attributes	'Implementation-Title': 'mercury-tiny-cli',
+				'Implementation-Version': version,
+				'Main-Class': "net.fabricmc.mercurycli.Main"
+	}
+}
+
+task allJar(type: Jar) {
+    from {
+		configurations.compile.collect {
+			it.isDirectory() ? it : zipTree(it)
+		}
+	}
+	manifest {
+		attributes	'Implementation-Title': 'mercury-tiny-cli',
+				'Implementation-Version': version,
+				'Main-Class': "net.fabricmc.mercurycli.Main"
+	}
+	classifier = 'all'
+	with jar
+}
+
+artifacts {
+   archives allJar
+}
